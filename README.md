@@ -36,6 +36,7 @@ The scan writes JSON graph files to `storage/app/laravel-brain/`. The viewer is 
 - **Scheduler tracing** — Visualizes scheduled tasks (`command`, `job`, `call`) with their frequency
 - **Broadcast channel mapping** — Discovers class-based and closure channels from `routes/channels.php`
 - **DB query tracing** — Surfaces Eloquent and raw queries per method
+- **DDD module map** — Detects `modules/*` bounded contexts, visualizes their DDD layers, and flags boundary violations
 - **Fat-class detection** — Flags controllers and services with more than 300 lines or 10 methods
 - **Cyclomatic complexity** — Highlights hotspots by complexity tier (Low / Moderate / High / Critical)
 - **Interactive graph** — Dark/light theme, accent-colored nodes, and interactive edges

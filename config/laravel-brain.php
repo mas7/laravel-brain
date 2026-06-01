@@ -168,6 +168,24 @@ return [
     ],
 
     // -------------------------------------------------------------------------
+    // DDD Module Detection
+    // -------------------------------------------------------------------------
+    // Directories (relative to project root) that contain bounded-context style
+    // modules. Every direct child directory is treated as one candidate module
+    // when it contains app/, composer.json, or a migration plan.
+    //
+    // Laravel Brain renders a dedicated "DDD Modules" tab and flags common
+    // boundary violations such as Domain importing Laravel/Eloquent, Application
+    // importing Interface/Infrastructure, public contracts exposing models, and
+    // unversioned public events.
+    //
+    'ddd' => [
+        'module_paths' => [
+            'modules',
+        ],
+    ],
+
+    // -------------------------------------------------------------------------
     // Livewire Component Search Paths
     // -------------------------------------------------------------------------
     // Directories (relative to project root) that are searched when resolving

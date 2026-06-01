@@ -6,6 +6,7 @@ namespace LaraMint\LaravelBrain\Graph;
 
 use LaraMint\LaravelBrain\Analysis\ChannelDefinition;
 use LaraMint\LaravelBrain\Analysis\ConsoleCommandDefinition;
+use LaraMint\LaravelBrain\Analysis\DddAnalysisResult;
 use LaraMint\LaravelBrain\Analysis\FilamentPageDefinition;
 use LaraMint\LaravelBrain\Analysis\FilamentPanelDefinition;
 use LaraMint\LaravelBrain\Analysis\FilamentResourceDefinition;
@@ -445,6 +446,103 @@ class GraphSplitter
         }
 
         return $json;
+    }
+
+    /**
+     * Build a standalone DDD modules tab.
+     *
+     * The graph is intentionally independent from route subgraphs: it shows
+     * bounded contexts, their DDD layers, and rule violations discovered by
+     * DddModuleAnalyzer.
+     *
+     * @return array{id: string, graph: Graph, manifest: TabManifestEntry}|null
+     */
+    public function buildDddTab(DddAnalysisResult $result, string $projectName, string $analyzedAt): ?array
+    {
+        if ($result->moduleCount() === 0) {
+            return null;
+        }
+
+        $graph = new Graph;
+        $graph->setMeta([
+            'project' => $projectName,
+            'analyzedAt' => $analyzedAt,
+            'ddd' => [
+                'moduleCount' => $result->moduleCount(),
+                'issueCount' => $result->issueCount(),
+            ],
+        ]);
+
+        $rootId = 'ddd::root';
+        $graph->addNode(new Node($rootId, 'ddd_root', 'DDD Modules', [
+            'moduleCount' => $result->moduleCount(),
+            'issueCount' => $result->issueCount(),
+        ]));
+
+        foreach ($result->modules as $module) {
+            $moduleId = 'ddd_module::'.$module->name;
+            $graph->addNode(new Node($moduleId, 'ddd_module', $module->name, [
+                'name' => $module->name,
+                'path' => $module->path,
+                'layerFileCounts' => $module->layerFileCounts,
+                'issueCount' => $module->issueCount(),
+            ]));
+            $graph->addEdge(new Edge(
+                id: 'ddd_edge::root::'.$module->name,
+                source: $rootId,
+                target: $moduleId,
+                label: 'module',
+                type: 'ddd-root-to-module',
+            ));
+
+            foreach ($module->layerFileCounts as $layer => $count) {
+                $layerId = 'ddd_layer::'.$module->name.'::'.$layer;
+                $graph->addNode(new Node($layerId, 'ddd_layer', $layer, [
+                    'module' => $module->name,
+                    'layer' => $layer,
+                    'fileCount' => $count,
+                ]));
+                $graph->addEdge(new Edge(
+                    id: 'ddd_edge::'.$module->name.'::'.$layer,
+                    source: $moduleId,
+                    target: $layerId,
+                    label: 'layer',
+                    type: 'ddd-module-to-layer',
+                ));
+            }
+
+            foreach ($module->issues as $issue) {
+                $issueId = 'ddd_issue::'.$issue->id;
+                $graph->addNode(new Node($issueId, 'ddd_issue', $issue->rule, $issue->toArray()));
+                $layerId = 'ddd_layer::'.$module->name.'::'.$issue->layer;
+                $sourceId = $graph->hasNode($layerId) ? $layerId : $moduleId;
+                $graph->addEdge(new Edge(
+                    id: 'ddd_edge::'.$issue->id,
+                    source: $sourceId,
+                    target: $issueId,
+                    label: $issue->severity,
+                    type: 'ddd-layer-to-issue',
+                ));
+            }
+        }
+
+        $tabId = 'ddd--modules';
+
+        return [
+            'id' => $tabId,
+            'graph' => $graph,
+            'manifest' => new TabManifestEntry(
+                id: $tabId,
+                label: 'DDD Modules',
+                routeCount: $result->moduleCount(),
+                nodeCount: $graph->nodeCount(),
+                edgeCount: $graph->edgeCount(),
+                file: ".graph-{$tabId}.json",
+                category: 'DDD',
+                issueCount: $result->issueCount(),
+                riskLevel: $result->issueCount() > 0 ? 'medium' : 'none',
+            ),
+        ];
     }
 
     /**

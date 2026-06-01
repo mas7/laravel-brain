@@ -49,6 +49,8 @@ class ProjectAnalyzer
 
     private SecurityAnalyzer $securityAnalyzer;
 
+    private DddModuleAnalyzer $dddModuleAnalyzer;
+
     private GraphBuilder $graphBuilder;
 
     private GraphSplitter $graphSplitter;
@@ -81,6 +83,7 @@ class ProjectAnalyzer
         $this->filamentAnalyzer = new FilamentAnalyzer;
         $this->queryTracer = new QueryTracer;
         $this->securityAnalyzer = new SecurityAnalyzer;
+        $this->dddModuleAnalyzer = new DddModuleAnalyzer;
         $this->graphBuilder = new GraphBuilder;
         $livewirePaths = config('laravel-brain.livewire.component_paths', []);
         if (is_array($livewirePaths) && $livewirePaths !== []) {
@@ -231,6 +234,18 @@ class ProjectAnalyzer
         $facadeCount = count($facadeRegistry->all());
         $this->emit('step:done', ['step' => 'facades', 'count' => $facadeCount, 'unit' => 'facade', 'message' => "    Found {$facadeCount} facade(s)"]);
 
+        $this->emit('step:start', ['step' => 'ddd', 'label' => 'Scanning DDD modules', 'message' => '  → Scanning DDD modules...']);
+        $dddConfigPaths = config('laravel-brain.ddd.module_paths', ['modules']);
+        $dddModulePaths = is_array($dddConfigPaths) ? $dddConfigPaths : ['modules'];
+        $dddResult = $this->dddModuleAnalyzer->analyze($projectRoot, $dddModulePaths);
+        $this->emit('step:done', [
+            'step' => 'ddd',
+            'count' => $dddResult->moduleCount(),
+            'unit' => 'module',
+            'extra' => $dddResult->issueCount().' DDD issue(s)',
+            'message' => '    Found '.$dddResult->moduleCount().' DDD module(s), '.$dddResult->issueCount().' issue(s)',
+        ]);
+
         // Release the ClassMethod AST cache accumulated during tracing — GraphBuilder has its own
         // parse cache and does not need MethodTracer's cached nodes. Freeing this before the
         // graph-building phase can reclaim hundreds of MB on large codebases.
@@ -270,6 +285,12 @@ class ProjectAnalyzer
         if ($erd !== null) {
             $split['subgraphs'][$erd['id']] = $erd['graph'];
             $split['manifest'][] = $erd['manifest'];
+        }
+
+        $ddd = $this->graphSplitter->buildDddTab($dddResult, $projectName, $analyzedAt);
+        if ($ddd !== null) {
+            $split['subgraphs'][$ddd['id']] = $ddd['graph'];
+            $split['manifest'][] = $ddd['manifest'];
         }
 
         $this->emit('step:done', ['step' => 'split', 'count' => count($split['subgraphs']), 'unit' => 'tab', 'message' => '    '.count($split['subgraphs']).' tab(s) generated']);
