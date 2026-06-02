@@ -291,6 +291,11 @@ class ProjectAnalyzer
         if ($ddd !== null) {
             $split['subgraphs'][$ddd['id']] = $ddd['graph'];
             $split['manifest'][] = $ddd['manifest'];
+
+            foreach ($this->graphSplitter->buildDddModuleTabs($dddResult, $projectName, $analyzedAt) as $moduleTab) {
+                $split['subgraphs'][$moduleTab['id']] = $moduleTab['graph'];
+                $split['manifest'][] = $moduleTab['manifest'];
+            }
         }
 
         $this->emit('step:done', ['step' => 'split', 'count' => count($split['subgraphs']), 'unit' => 'tab', 'message' => '    '.count($split['subgraphs']).' tab(s) generated']);

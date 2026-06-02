@@ -96,3 +96,30 @@ PHP);
         ->and($tab['manifest']->label)->toBe('DDD Modules')
         ->and($tab['graph']->nodeCount())->toBeGreaterThan(1);
 });
+
+it('builds a focused DDD graph tab for each module', function () {
+    $root = dddTempProject();
+
+    dddWriteFile($root.'/modules/billing/app/Domain/Entities/Invoice.php', <<<'PHP'
+<?php
+namespace App\Modules\Billing\Domain\Entities;
+final class Invoice {}
+PHP);
+
+    dddWriteFile($root.'/modules/identity/app/Domain/Entities/User.php', <<<'PHP'
+<?php
+namespace App\Modules\Identity\Domain\Entities;
+final class User {}
+PHP);
+
+    $result = (new DddModuleAnalyzer)->analyze($root);
+    $tabs = (new GraphSplitter)->buildDddModuleTabs($result, 'Test App', '2026-06-01T00:00:00Z');
+
+    expect($tabs)->toHaveCount(2)
+        ->and(array_map(static fn ($tab) => $tab['manifest']->label, $tabs))
+        ->toBe(['billing', 'identity'])
+        ->and(array_map(static fn ($tab) => $tab['manifest']->category, $tabs))
+        ->toBe(['DDD', 'DDD'])
+        ->and(array_map(static fn ($tab) => $tab['graph']->nodeCount(), $tabs))
+        ->each->toBeGreaterThan(1);
+});

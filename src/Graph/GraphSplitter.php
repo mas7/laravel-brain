@@ -7,6 +7,7 @@ namespace LaraMint\LaravelBrain\Graph;
 use LaraMint\LaravelBrain\Analysis\ChannelDefinition;
 use LaraMint\LaravelBrain\Analysis\ConsoleCommandDefinition;
 use LaraMint\LaravelBrain\Analysis\DddAnalysisResult;
+use LaraMint\LaravelBrain\Analysis\DddModule;
 use LaraMint\LaravelBrain\Analysis\FilamentPageDefinition;
 use LaraMint\LaravelBrain\Analysis\FilamentPanelDefinition;
 use LaraMint\LaravelBrain\Analysis\FilamentResourceDefinition;
@@ -463,23 +464,87 @@ class GraphSplitter
             return null;
         }
 
+        $graph = $this->buildDddGraph($result->modules, $projectName, $analyzedAt, [
+            'moduleCount' => $result->moduleCount(),
+            'issueCount' => $result->issueCount(),
+        ]);
+
+        $tabId = 'ddd--modules';
+
+        return [
+            'id' => $tabId,
+            'graph' => $graph,
+            'manifest' => new TabManifestEntry(
+                id: $tabId,
+                label: 'DDD Modules',
+                routeCount: $result->moduleCount(),
+                nodeCount: $graph->nodeCount(),
+                edgeCount: $graph->edgeCount(),
+                file: ".graph-{$tabId}.json",
+                category: 'DDD',
+                issueCount: $result->issueCount(),
+                riskLevel: $result->issueCount() > 0 ? 'medium' : 'none',
+            ),
+        ];
+    }
+
+    /**
+     * Build one focused DDD tab per module.
+     *
+     * @return list<array{id: string, graph: Graph, manifest: TabManifestEntry}>
+     */
+    public function buildDddModuleTabs(DddAnalysisResult $result, string $projectName, string $analyzedAt): array
+    {
+        $tabs = [];
+
+        foreach ($result->modules as $module) {
+            $tabId = 'ddd--module--'.$this->slug($module->name);
+            $graph = $this->buildDddGraph([$module], $projectName, $analyzedAt, [
+                'module' => $module->name,
+                'moduleCount' => 1,
+                'issueCount' => $module->issueCount(),
+            ]);
+
+            $tabs[] = [
+                'id' => $tabId,
+                'graph' => $graph,
+                'manifest' => new TabManifestEntry(
+                    id: $tabId,
+                    label: $module->name,
+                    routeCount: 1,
+                    nodeCount: $graph->nodeCount(),
+                    edgeCount: $graph->edgeCount(),
+                    file: ".graph-{$tabId}.json",
+                    category: 'DDD',
+                    issueCount: $module->issueCount(),
+                    riskLevel: $module->issueCount() > 0 ? 'medium' : 'none',
+                ),
+            ];
+        }
+
+        return $tabs;
+    }
+
+    /**
+     * @param  list<DddModule>  $modules
+     * @param  array<string, mixed>  $dddMeta
+     */
+    private function buildDddGraph(array $modules, string $projectName, string $analyzedAt, array $dddMeta): Graph
+    {
         $graph = new Graph;
         $graph->setMeta([
             'project' => $projectName,
             'analyzedAt' => $analyzedAt,
-            'ddd' => [
-                'moduleCount' => $result->moduleCount(),
-                'issueCount' => $result->issueCount(),
-            ],
+            'ddd' => $dddMeta,
         ]);
 
         $rootId = 'ddd::root';
         $graph->addNode(new Node($rootId, 'ddd_root', 'DDD Modules', [
-            'moduleCount' => $result->moduleCount(),
-            'issueCount' => $result->issueCount(),
+            'moduleCount' => count($modules),
+            'issueCount' => array_sum(array_map(static fn (DddModule $module): int => $module->issueCount(), $modules)),
         ]));
 
-        foreach ($result->modules as $module) {
+        foreach ($modules as $module) {
             $moduleId = 'ddd_module::'.$module->name;
             $graph->addNode(new Node($moduleId, 'ddd_module', $module->name, [
                 'name' => $module->name,
@@ -526,23 +591,14 @@ class GraphSplitter
             }
         }
 
-        $tabId = 'ddd--modules';
+        return $graph;
+    }
 
-        return [
-            'id' => $tabId,
-            'graph' => $graph,
-            'manifest' => new TabManifestEntry(
-                id: $tabId,
-                label: 'DDD Modules',
-                routeCount: $result->moduleCount(),
-                nodeCount: $graph->nodeCount(),
-                edgeCount: $graph->edgeCount(),
-                file: ".graph-{$tabId}.json",
-                category: 'DDD',
-                issueCount: $result->issueCount(),
-                riskLevel: $result->issueCount() > 0 ? 'medium' : 'none',
-            ),
-        ];
+    private function slug(string $value): string
+    {
+        $slug = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $value) ?? '');
+
+        return trim($slug, '-') ?: 'module';
     }
 
     /**
