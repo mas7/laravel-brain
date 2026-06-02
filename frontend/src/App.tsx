@@ -12,12 +12,17 @@ import type { GraphNode, TabEntry } from './types/graph'
 import { Tooltip } from './components/Tooltip'
 import './App.css'
 
-const ALL_TYPES: GraphNode['type'][] = [
+const BASE_TYPES: GraphNode['type'][] = [
   'route', 'middleware', 'controller', 'livewire_component', 'action', 'service', 'validation_request', 'model', 'event', 'job',
   'command', 'channel', 'schedule',
   'view', 'mail', 'notification', 'enum', 'interface', 'trait', 'abstract_class', 'service_provider',
   'filament_panel', 'filament_resource', 'filament_page', 'filament_page_method', 'filament_widget', 'filament_relation_manager',
 ]
+
+function graphTypes(nodes: GraphNode[]): string[] {
+  const discovered = nodes.map((node) => node.type)
+  return [...new Set([...BASE_TYPES, ...discovered])]
+}
 
 // Node types that should have their methods expanded on first click
 
@@ -34,7 +39,7 @@ export default function App() {
   const [sidebarMode, setSidebarMode] = useState<'routes' | 'risks' | 'recent'>('routes')
   const [searchQuery, setSearchQuery] = useState('')
   const [pendingRouteSelect, setPendingRouteSelect] = useState(false)
-  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(ALL_TYPES))
+  const [visibleTypes, setVisibleTypes] = useState<Set<string>>(new Set(BASE_TYPES))
   const [rankDir, setRankDir] = useState<'LR' | 'TB'>('TB')
   const [stressTestNodeId, setStressTestNodeId] = useState<string | null>(null)
   const [stressRunKey, setStressRunKey] = useState(0)
@@ -75,7 +80,7 @@ export default function App() {
   if (tabState.data !== prevTabData) {
     setPrevTabData(tabState.data)
     if (tabState.data) {
-      setVisibleTypes(new Set(ALL_TYPES))
+      setVisibleTypes(new Set(graphTypes(tabState.data.nodes)))
       // When the load came from picking a route/risk/recent card, focus its
       // route node so the graph + inspector jump to it.
       if (pendingRouteSelect) {
@@ -156,7 +161,9 @@ export default function App() {
     })
   }, [])
 
-  const onShowAll = useCallback(() => setVisibleTypes(new Set(ALL_TYPES)), [])
+  const onShowAll = useCallback(() => {
+    setVisibleTypes(new Set(tabState.data ? graphTypes(tabState.data.nodes) : BASE_TYPES))
+  }, [tabState.data])
   const onHideAll = useCallback(() => setVisibleTypes(new Set()), [])
 
   const [scanning, setScanning] = useState(false)

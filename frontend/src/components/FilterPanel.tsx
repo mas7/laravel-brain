@@ -31,6 +31,10 @@ const TYPE_LABELS: Partial<Record<GraphNode['type'], string>> = {
   filament_page_method: 'F. Methods',
   filament_widget: 'F. Widgets',
   filament_relation_manager: 'F. Relations',
+  ddd_root: 'DDD Root',
+  ddd_module: 'DDD Modules',
+  ddd_layer: 'DDD Layers',
+  ddd_issue: 'DDD Issues',
 }
 
 // Stable order matching App.tsx ALL_TYPES
@@ -40,6 +44,7 @@ const ORDER: GraphNode['type'][] = [
   'view', 'mail', 'notification', 'enum', 'interface', 'trait', 'abstract_class',
   'service_provider', 'facade', 'filament_panel', 'filament_resource', 'filament_page',
   'filament_page_method', 'filament_widget', 'filament_relation_manager',
+  'ddd_root', 'ddd_module', 'ddd_layer', 'ddd_issue',
 ]
 
 interface Props {
@@ -51,7 +56,13 @@ interface Props {
 }
 
 export function FilterPanel({ visibleTypes, counts, onToggle, onShowAll, onHideAll }: Props) {
-  const present = ORDER.filter((t) => (counts[t] ?? 0) > 0)
+  const unknownTypes = Object.keys(counts)
+    .filter((type) => !ORDER.includes(type))
+    .sort()
+  const present = [
+    ...ORDER.filter((t) => (counts[t] ?? 0) > 0),
+    ...unknownTypes,
+  ]
 
   return (
     <div className="show-graph">

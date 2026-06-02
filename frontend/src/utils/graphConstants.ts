@@ -30,6 +30,10 @@ export const ACCENT_COLORS: Record<string, string> = {
   filament_page_method:      '#E879F9',
   filament_widget:           '#06B6D4',
   filament_relation_manager: '#0891B2',
+  ddd_root:                  '#7C3AED',
+  ddd_module:                '#22C55E',
+  ddd_layer:                 '#F59E0B',
+  ddd_issue:                 '#EF4444',
 }
 
 /** Darkened accent colours for text / icons on light card backgrounds */
@@ -62,6 +66,10 @@ export const ACCENT_COLORS_LIGHT: Record<string, string> = {
   filament_page_method:      '#a21caf',
   filament_widget:           '#0369a1',
   filament_relation_manager: '#075985',
+  ddd_root:                  '#5b21b6',
+  ddd_module:                '#15803d',
+  ddd_layer:                 '#b45309',
+  ddd_issue:                 '#b91c1c',
 }
 
 /** Dark-mode node background colours (deep tinted darks) */
@@ -94,6 +102,10 @@ export const BG_COLORS: Record<string, string> = {
   filament_page_method:      '#240E30',
   filament_widget:           '#071A1E',
   filament_relation_manager: '#06161A',
+  ddd_root:                  '#150C2A',
+  ddd_module:                '#071A0D',
+  ddd_layer:                 '#1C1408',
+  ddd_issue:                 '#1C0C0C',
 }
 
 /** Light-mode node background colours (soft tinted pastels) */
@@ -126,6 +138,10 @@ export const BG_COLORS_LIGHT: Record<string, string> = {
   filament_page_method:      '#fef0ff',
   filament_widget:           '#ecfeff',
   filament_relation_manager: '#e0f2fe',
+  ddd_root:                  '#f5f3ff',
+  ddd_module:                '#f0fdf4',
+  ddd_layer:                 '#fffbeb',
+  ddd_issue:                 '#fff1f2',
 }
 
 export const HIGHLIGHT_COLOR = '#8B6FE8'
